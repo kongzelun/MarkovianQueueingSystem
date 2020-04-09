@@ -77,6 +77,7 @@ class MarkovianQueueingSystem:
         self.blocked_number = 0
         self.total_time = 0.0
         self.expected_number = 0.0
+        self.number_time_product_sum = 0.0
 
         if self.K < 2:
             raise ValueError("K >= 2")
@@ -102,7 +103,9 @@ class MarkovianQueueingSystem:
         """
         `return`: whether new customer entering service
         """
+        previous_time = self.current_time
         self.current_time = e.time
+        self.number_time_product_sum += self.customer_number * (self.current_time - previous_time)
 
         if e.t == 'a':
             if self.customer_number < self.K:
@@ -131,6 +134,10 @@ class Simulator:
         self._times = times
         self._event_list = []
         self._arrival_interval = Exponential(mu=self._lambda_)
+
+    @property
+    def times(self):
+        return self._times
 
     def _append_event(self, e):
         self._event_list.append(e)
@@ -166,11 +173,29 @@ class Simulator:
                     total_number += 1
                     self._append_event(Event('a', self.mqs.current_time + self._arrival_interval(), total_number))
 
-        print(f"Total: {total_number} Blocked: {self.mqs.blocked_number} Average Time: {self.mqs.total_time/total_number:.3f} Utilization: {0}")
+        # print(f"Total: {total_number} Blocked: {self.mqs.blocked_number} Average Time: {self.mqs.total_time/total_number:.3f} Utilization: {0}")
 
 
 if __name__ == "__main__":
-    MQS = MarkovianQueueingSystem(K=4, mu=3)
-    SIMULATOR = Simulator(MQS, lambda_=0.1 * MQS.m * MQS.mu)
+    average_number = []
+    average_time = []
+    block_probability = []
+    total_utilization = []
 
-    SIMULATOR()
+    for rho in range(10):
+        MQS = MarkovianQueueingSystem(K=4, mu=3)
+        SIMULATOR = Simulator(MQS, lambda_=(rho+1)/10 * MQS.m * MQS.mu)
+
+        SIMULATOR()
+
+        average_number.append(MQS.number_time_product_sum / MQS.current_time)
+        average_time.append(MQS.total_time / SIMULATOR.times)
+        block_probability.append(MQS.blocked_number / SIMULATOR.times)
+        total_utilization.append(MQS.total_operation_time / (MQS.current_time * MQS.m))
+
+    print(average_number)
+    print(average_time)
+    print(block_probability)
+    print(total_utilization)
+
+
