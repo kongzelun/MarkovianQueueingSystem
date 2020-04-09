@@ -122,7 +122,8 @@ class MarkovianQueueingSystem:
             arrival_event = self.queue.pop(0)
             operation_time = self._service_interval()
             self.total_operation_time += operation_time
-            self.total_time = self.current_time - arrival_event.time + operation_time
+            spent_time = self.current_time - arrival_event.time + operation_time
+            self.total_time += spent_time
             self._used_server += 1
             return Event('d', time=self.current_time + operation_time, customer=arrival_event.customer)
 
